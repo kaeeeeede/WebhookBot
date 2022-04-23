@@ -1,0 +1,9 @@
+DISCORD_TOKEN: ~
+gitDiscordMapping:
+  <GitHub ID here>: <Discord ID here>
+targetChannelID: <Channel/Thread ID here>
+trelloAPIKeyMapping:
+  <Trello ID here>: <Trello APIKey here>
+trelloTokenMapping:
+  <Trello ID here>: <Trello Token here>
+trelloWatchListID: <Trello To-Watch List ID here>
