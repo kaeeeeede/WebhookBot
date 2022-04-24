@@ -1,49 +1,50 @@
 import requests
 import json
 import re
+import yaml
 
-def getCardsFromList(id, config):
+with open('config.yaml', 'r+') as f:
+	config = yaml.safe_load(f)
+
+def getCardsFromList(id):
 	url = f"https://api.trello.com/1/lists/{id}/cards"
 
 	headers = {"Accept": "application/json"}
 
-	query = {
-		'key': config["mainUserAPIKey"],
-	    'token': config["mainUserToken"]}
+	query = {'key': config["mainUserAPIKey"],
+			 'token': config["mainUserToken"]}
 
 	response = requests.request("GET", url, headers=headers, params=query)
 
 	return response.json()
 
-def getCardDesc(id, config):
+def getCardDesc(id):
 	url = f"https://api.trello.com/1/cards/{id}/desc"
-
-	headers = {
-	   "Accept": "application/json"
-	}
-
-	query = {
-	   'key': config["mainUserAPIKey"],
-	   'token': config["mainUserToken"]}
-
-	response = requests.request("GET", url, headers=headers, params=query)
-
-	return response.json()
-
-def findCard(targetURL, desc):
-	regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-	urls = re.findall(regex, desc)
-	for url in urls:
-		if url == targetURL:
-			print("Target found.")
-			return True
-
-def moveCardToList(id, config):
-	url = f"https://api.trello.com/1/cards/{id}"
 
 	headers = {"Accept": "application/json"}
 
 	query = {'key': config["mainUserAPIKey"],
+			 'token': config["mainUserToken"]}
+
+	response = requests.request("GET", url, headers=headers, params=query)
+
+	return response.json()
+
+def findCard(htmlURL, desc):
+	regex = r"PULL REQUEST: http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+	urls = re.findall(regex, desc)
+	target = f"PULL REQUEST: {htmlURL}"
+	for url in urls:
+		if url == target:
+			print("Target found.")
+			return True
+
+def moveCardToList(id):
+	url = f"https://api.trello.com/1/cards/{id}"
+
+	headers = {"Accept": "application/json"}
+
+	query = {'key': config["mainUserAPIKey"], 
 			 'token': config["mainUserToken"],
 			 'idList': config["trelloMoveToListID"]}
 
@@ -51,46 +52,30 @@ def moveCardToList(id, config):
 
 	print("Move was successful.")
 
-def getVotedMembers(id, config):
+def getVotedMembers(id):
 	url = f"https://api.trello.com/1/cards/{id}/membersVoted"
 
-	query = {
-	   'key': config["mainUserAPIKey"],
-	   'token': config["mainUserToken"]
-	}
+	query = {'key': config["mainUserAPIKey"], 
+			 'token': config["mainUserToken"]}
 
-	response = requests.request(
-	   "GET",
-	   url,
-	   params=query
-	)
+	response = requests.request("GET", url, params=query)
 
 	return response.json()
 
-def clearVotes(id, config, idMember):
+def clearVotes(id, idMember):
 	url = f"https://api.trello.com/1/cards/{id}/membersVoted/{idMember}"
 
-	print(config["trelloAPIKeyMapping"][idMember], " ", config["trelloTokenMapping"][idMember])
+	query = {'key': config["trelloAPIKeyMapping"][idMember],
+			 'token': config["trelloTokenMapping"][idMember]}
+	
+	response = requests.request("DELETE", url, params=query)
 
-	query = {
-	   'key': config["trelloAPIKeyMapping"][idMember],
-	   'token': config["trelloTokenMapping"][idMember]
-	}
-
-	response = requests.request(
-	   "DELETE",
-	   url,
-	   params=query
-	)
-
-	return
-
-def initWebhook(config):
+def initWebhook():
 	url = "https://api.trello.com/1/webhooks"
 
 	headers = {"Accept": "application/json"}
 
-	query = {'callbackURL': 'https://77bb-218-111-14-86.ngrok.io/trelloMovedToBoard',
+	query = {'callbackURL': 'https://8363-218-111-14-86.ngrok.io/trelloMovedToBoard',
    			 'idModel': config["trelloWatchListID"],
    			 'key': config["mainUserAPIKey"],
 	   		 'token': config["mainUserToken"]

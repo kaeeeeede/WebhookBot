@@ -14,17 +14,18 @@ routes = web.RouteTableDef()
 async def fetchDetails(request):
 	data = await request.json()
 	
-	if data["pull_request"]["merged"] == True:
-		message_string = discordBot.createMessage(data, config)
-		await discordBot.sendMessage(config, message_string)
-		
-		responses = trello.getCardsFromList(config["trelloMoveFromListID"], config)
-		for response in responses:
-			desc = trello.getCardDesc(response["id"], config)
-			print(data["pull_request"]["html_url"])
-			print(desc["_value"])
-			if trello.findCard(data["pull_request"]["html_url"], desc["_value"]) == True:
-				trello.moveCardToList(response["id"], config)
+	try:
+		if data["pull_request"]["merged"] == True:
+			message_string = discordBot.createMessage(data)
+			await discordBot.sendMessage(message_string)
+			
+			responses = trello.getCardsFromList(config["trelloMoveFromListID"])
+			for response in responses:
+				desc = trello.getCardDesc(response["id"])
+				if trello.findCard(data["pull_request"]["html_url"], desc["_value"]) == True:
+					trello.moveCardToList(response["id"])
+	except KeyError:
+		pass
 
 	return web.json_response(data)
 
@@ -42,9 +43,9 @@ async def movedToBoard(request):
 			print("Movement detected.")
 
 			cardID = data["action"]["data"]["card"]["id"]
-			responses = trello.getVotedMembers(cardID, config)
+			responses = trello.getVotedMembers(cardID)
 			for response in responses:
-				trello.clearVotes(cardID, config, response["id"])
+				trello.clearVotes(cardID, response["id"])
 	except KeyError:
 		pass
 
@@ -65,7 +66,7 @@ if __name__ == "__main__":
 	server = loop.run_in_executor(executor, run_server)
 	
 	try:
-		trello.initWebhook(config)
+		trello.initWebhook()
 		loop.run_forever()
 	except KeyboardInterrupt:
 		print("Exiting...")
