@@ -9,7 +9,7 @@ with open('config.yaml', 'r+') as f:
 	config = yaml.safe_load(f)
 
 routes = web.RouteTableDef()
-trelloManager = trello.trelloManager(config["mainUserAPIKey"], config["mainUserToken"])
+trelloManager = trello.trelloManager(config)
 
 @routes.post("/githubPullRequest")
 async def fetchDetails(request):
@@ -19,13 +19,20 @@ async def fetchDetails(request):
 		return web.json_response(data) 
 
 	if data["pull_request"]["merged"] == True:
-		message_string = discordBot.createMessage(data, config)
-		await discordBot.sendMessage(message_string, config)
+		pullReqUserID = data["pull_request"]["user"]["id"]
+		discordUserID = str(config['gitDiscordMapping'].get(pullReqUserID))
+		pullReqTitle = data["pull_request"]["title"]
+		pullReqURL = data["pull_request"]["html_url"]
+		discordToken = config.get('DISCORD_TOKEN')
+		targetChannelID = config.get('targetChannelID')
+
+		message_string = discordBot.createMessage(pullReqUserID, discordUserID, pullReqTitle, pullReqURL)
+		await discordBot.sendMessage(message_string, discordToken,  targetChannelID)
 		
 		responses = trelloManager.getCardsFromList(config["trelloMoveFromListID"])
 		for response in responses:
 			desc = trelloManager.getCardDesc(response["id"])
-			if trelloManager.findURL(data["pull_request"]["html_url"], desc["_value"]) == True:
+			if trelloManager.urlExistsIn(desc["_value"], data["pull_request"]["html_url"]) == True:
 				trelloManager.moveCardToList(response["id"], config["trelloMoveToListID"])
 
 		return web.json_response(data)
@@ -43,12 +50,12 @@ async def movedToBoard(request):
 	if "listAfter" not in data["action"]["data"]:
 		return web.json_response(data)
 
-	if data["action"]["type"] == "updateCard" and data["action"]["data"]["listAfter"]["id"] == config["trelloWatchListID"]:
+	if isUpdateCard(data) and isWatchListID(data):
 		cardID = data["action"]["data"]["card"]["id"]
-		responses = trelloManager.getVotedMembers(cardID)
-		for response in responses:
-			if response["id"] in config["trelloMapping"]: 
-				trelloManager.clearVote(cardID, response["id"], config["trelloMapping"][response["id"]][0], config["trelloMapping"][response["id"]][1])
+		votedMembers = trelloManager.getVotedMembers(cardID)
+		for member in votedMembers:
+			if member["id"] in config["trelloMapping"]: 
+				trelloManager.clearVote(cardID, member["id"])
 
 	return web.json_response(data)
 
@@ -59,6 +66,18 @@ def run_server():
 
 def run_bot():
 	discordBot.bot.run()
+
+def isUpdateCard(data):
+	if data["action"]["type"] == "updateCard":
+		return True
+
+	return False
+
+def isWatchListID(data):
+	if data["action"]["data"]["listAfter"]["id"] == config["trelloWatchListID"]:
+		return True
+
+	return False
 
 if __name__ == "__main__":
 	executor = ProcessPoolExecutor(2)

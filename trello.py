@@ -3,77 +3,77 @@ import json
 import re
 
 class trelloManager:
-	def __init__(self, mainUserAPIKey, mainUserToken):
-		self.mainUserAPIKey = mainUserAPIKey
-		self.mainUserToken = mainUserToken
+	def __init__(self, config):
+		self.mainUserAPIKey = config["mainUserAPIKey"]
+		self.mainUserToken = config["mainUserToken"]
+		self.baseURL = "https://api.trello.com/1/"
+		self.baseParams = {'key': self.mainUserAPIKey
+						  ,'token': self.mainUserToken}
+		self.trelloMappings = {}
+		for mapping in config["trelloMapping"]:
+			self.trelloMappings[mapping] = (config["trelloMapping"][mapping][0], config["trelloMapping"][mapping][1])
 
 	def getCardsFromList(self, listID):
 		url = f"https://api.trello.com/1/lists/{listID}/cards"
 
 		headers = {"Accept": "application/json"}
 
-		query = {'key': self.mainUserAPIKey,
-				 'token': self.mainUserToken}
+		params = self.baseParams
 
-		response = requests.request("GET", url, headers=headers, params=query)
+		response = requests.request("GET", url, headers = headers, params = params)
 
 		return response.json()
 
 	def getCardDesc(self, cardID):
-		url = f"https://api.trello.com/1/cards/{cardID}/desc"
+		url = f"{self.baseURL}cards/{cardID}/desc"
 
 		headers = {"Accept": "application/json"}
 
-		query = {'key': self.mainUserAPIKey,
-				 'token': self.mainUserToken}
+		params = self.baseParams
 
-		response = requests.request("GET", url, headers=headers, params=query)
+		response = requests.request("GET", url, headers = headers, params = params)
 
 		return response.json()
 
-	def findURL(self, pullRequestURL, desc):
+	def urlExistsIn(self, desc, pullRequestURL):
 		regex = rf"PULL REQUEST: {pullRequestURL}"
-		if re.findall(regex, desc):
+		if re.fullmatch(regex, desc):
 			return True
 
-	def moveCardToList(self, cardID, trelloMoveToListID):
-		url = f"https://api.trello.com/1/cards/{cardID}"
+	def moveCardToList(self, cardID, listID):
+		url = f"{self.baseURL}cards/{cardID}"
 
 		headers = {"Accept": "application/json"}
 
-		query = {'key': self.mainUserAPIKey, 
-				 'token': self.mainUserToken,
-				 'idList': trelloMoveToListID}
+		params = self.baseParams
+		params['idList'] = listID
 
-		response = requests.request("PUT", url, headers=headers, params=query)
+		response = requests.request("PUT", url, headers = headers, params = params)
 
 	def getVotedMembers(self, cardID):
-		url = f"https://api.trello.com/1/cards/{cardID}/membersVoted"
+		url = f"{self.baseURL}cards/{cardID}/membersVoted"
 
-		query = {'key': self.mainUserAPIKey, 
-				 'token': self.mainUserToken}
+		params = self.baseParams
 
-		response = requests.request("GET", url, params=query)
+		response = requests.request("GET", url, params = params)
 
 		return response.json()
 
-	def clearVote(self, cardID, memberID, memberAPIKey, memberToken):
-		url = f"https://api.trello.com/1/cards/{cardID}/membersVoted/{memberID}"
+	def clearVote(self, cardID, memberID):
+		url = f"{self.baseURL}cards/{cardID}/membersVoted/{memberID}"
 
-		query = {'key': memberAPIKey,
-				 'token': memberToken}
+		params = {'key': self.trelloMappings[memberID][0]
+				 ,'token': self.trelloMappings[memberID][1]}
 		
-		response = requests.request("DELETE", url, params=query)
+		response = requests.request("DELETE", url, params = params)
 
 	def initWebhook(self, trelloWatchListID):
-		url = "https://api.trello.com/1/webhooks"
+		url = f"{self.baseURL}webhooks"
 
 		headers = {"Accept": "application/json"}
 
-		query = {'callbackURL': 'https://4162-218-111-14-86.ngrok.io/trelloMovedToBoard',
-	   			 'idModel': trelloWatchListID,
-	   			 'key': self.mainUserAPIKey,
-		   		 'token': self.mainUserToken
-		}
+		params = self.baseParams
+		params['callbackURL'] = 'https://6675-218-111-14-86.ngrok.io/trelloMovedToBoard'
+		params['idModel'] = trelloWatchListID
 
-		response = requests.request("POST", url, headers=headers, params=query)
+		response = requests.request("POST", url, headers = headers, params = params)
