@@ -1,86 +1,79 @@
 import requests
 import json
 import re
-import yaml
 
-with open('config.yaml', 'r+') as f:
-	config = yaml.safe_load(f)
+class trelloManager:
+	def __init__(self, mainUserAPIKey, mainUserToken):
+		self.mainUserAPIKey = mainUserAPIKey
+		self.mainUserToken = mainUserToken
 
-def getCardsFromList(id):
-	url = f"https://api.trello.com/1/lists/{id}/cards"
+	def getCardsFromList(self, listID):
+		url = f"https://api.trello.com/1/lists/{listID}/cards"
 
-	headers = {"Accept": "application/json"}
+		headers = {"Accept": "application/json"}
 
-	query = {'key': config["mainUserAPIKey"],
-			 'token': config["mainUserToken"]}
+		query = {'key': self.mainUserAPIKey,
+				 'token': self.mainUserToken}
 
-	response = requests.request("GET", url, headers=headers, params=query)
+		response = requests.request("GET", url, headers=headers, params=query)
 
-	return response.json()
+		return response.json()
 
-def getCardDesc(id):
-	url = f"https://api.trello.com/1/cards/{id}/desc"
+	def getCardDesc(self, cardID):
+		url = f"https://api.trello.com/1/cards/{cardID}/desc"
 
-	headers = {"Accept": "application/json"}
+		headers = {"Accept": "application/json"}
 
-	query = {'key': config["mainUserAPIKey"],
-			 'token': config["mainUserToken"]}
+		query = {'key': self.mainUserAPIKey,
+				 'token': self.mainUserToken}
 
-	response = requests.request("GET", url, headers=headers, params=query)
+		response = requests.request("GET", url, headers=headers, params=query)
 
-	return response.json()
+		return response.json()
 
-def findCard(htmlURL, desc):
-	regex = r"PULL REQUEST: http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
-	urls = re.findall(regex, desc)
-	target = f"PULL REQUEST: {htmlURL}"
-	for url in urls:
-		if url == target:
-			print("Target found.")
+	def findURL(self, pullRequestURL, desc):
+		regex = rf"PULL REQUEST: {pullRequestURL}"
+		if re.findall(regex, desc):
 			return True
 
-def moveCardToList(id):
-	url = f"https://api.trello.com/1/cards/{id}"
+	def moveCardToList(self, cardID, trelloMoveToListID):
+		url = f"https://api.trello.com/1/cards/{cardID}"
 
-	headers = {"Accept": "application/json"}
+		headers = {"Accept": "application/json"}
 
-	query = {'key': config["mainUserAPIKey"], 
-			 'token': config["mainUserToken"],
-			 'idList': config["trelloMoveToListID"]}
+		query = {'key': self.mainUserAPIKey, 
+				 'token': self.mainUserToken,
+				 'idList': trelloMoveToListID}
 
-	response = requests.request("PUT", url, headers=headers, params=query)
+		response = requests.request("PUT", url, headers=headers, params=query)
 
-	print("Move was successful.")
+	def getVotedMembers(self, cardID):
+		url = f"https://api.trello.com/1/cards/{cardID}/membersVoted"
 
-def getVotedMembers(id):
-	url = f"https://api.trello.com/1/cards/{id}/membersVoted"
+		query = {'key': self.mainUserAPIKey, 
+				 'token': self.mainUserToken}
 
-	query = {'key': config["mainUserAPIKey"], 
-			 'token': config["mainUserToken"]}
+		response = requests.request("GET", url, params=query)
 
-	response = requests.request("GET", url, params=query)
+		return response.json()
 
-	return response.json()
+	def clearVote(self, cardID, memberID, memberAPIKey, memberToken):
+		url = f"https://api.trello.com/1/cards/{cardID}/membersVoted/{memberID}"
 
-def clearVotes(id, idMember):
-	url = f"https://api.trello.com/1/cards/{id}/membersVoted/{idMember}"
+		query = {'key': memberAPIKey,
+				 'token': memberToken}
+		
+		response = requests.request("DELETE", url, params=query)
 
-	query = {'key': config["trelloAPIKeyMapping"][idMember],
-			 'token': config["trelloTokenMapping"][idMember]}
-	
-	response = requests.request("DELETE", url, params=query)
+	def initWebhook(self, trelloWatchListID):
+		url = "https://api.trello.com/1/webhooks"
 
-def initWebhook():
-	url = "https://api.trello.com/1/webhooks"
+		headers = {"Accept": "application/json"}
 
-	headers = {"Accept": "application/json"}
+		query = {'callbackURL': 'https://4162-218-111-14-86.ngrok.io/trelloMovedToBoard',
+	   			 'idModel': trelloWatchListID,
+	   			 'key': self.mainUserAPIKey,
+		   		 'token': self.mainUserToken
+		}
 
-	query = {'callbackURL': 'https://8363-218-111-14-86.ngrok.io/trelloMovedToBoard',
-   			 'idModel': config["trelloWatchListID"],
-   			 'key': config["mainUserAPIKey"],
-	   		 'token': config["mainUserToken"]
-	}
-
-	response = requests.request("POST", url, headers=headers, params=query)
-
-	print("Webhook initialized.")	
+		response = requests.request("POST", url, headers=headers, params=query)

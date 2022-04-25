@@ -9,28 +9,30 @@ with open('config.yaml', 'r+') as f:
 	config = yaml.safe_load(f)
 
 routes = web.RouteTableDef()
+trelloManager = trello.trelloManager(config["mainUserAPIKey"], config["mainUserToken"])
 
 @routes.post("/githubPullRequest")
 async def fetchDetails(request):
 	data = await request.json()
 	
-	try:
-		if data["pull_request"]["merged"] == True:
-			message_string = discordBot.createMessage(data)
-			await discordBot.sendMessage(message_string)
-			
-			responses = trello.getCardsFromList(config["trelloMoveFromListID"])
-			for response in responses:
-				desc = trello.getCardDesc(response["id"])
-				if trello.findCard(data["pull_request"]["html_url"], desc["_value"]) == True:
-					trello.moveCardToList(response["id"])
-	except KeyError:
-		pass
+	if "pull_request" not in data:
+		return web.json_response(data) 
 
-	return web.json_response(data)
+	if data["pull_request"]["merged"] == True:
+		message_string = discordBot.createMessage(data, config)
+		await discordBot.sendMessage(message_string, config)
+		
+		responses = trelloManager.getCardsFromList(config["trelloMoveFromListID"])
+		for response in responses:
+			desc = trelloManager.getCardDesc(response["id"])
+			if trelloManager.findURL(data["pull_request"]["html_url"], desc["_value"]) == True:
+				trelloManager.moveCardToList(response["id"], config["trelloMoveToListID"])
+
+		return web.json_response(data)
 
 @routes.head("/trelloMovedToBoard")
 async def initWebhook(request):
+	print("Webhook initialized.")
 
 	return web.json_response()
 
@@ -38,16 +40,15 @@ async def initWebhook(request):
 async def movedToBoard(request):
 	data = await request.json()
 
-	try:
-		if data["action"]["type"] == "updateCard" and data["action"]["data"]["listAfter"]["id"] == config["trelloWatchListID"]:
-			print("Movement detected.")
+	if "listAfter" not in data["action"]["data"]:
+		return web.json_response(data)
 
-			cardID = data["action"]["data"]["card"]["id"]
-			responses = trello.getVotedMembers(cardID)
-			for response in responses:
-				trello.clearVotes(cardID, response["id"])
-	except KeyError:
-		pass
+	if data["action"]["type"] == "updateCard" and data["action"]["data"]["listAfter"]["id"] == config["trelloWatchListID"]:
+		cardID = data["action"]["data"]["card"]["id"]
+		responses = trelloManager.getVotedMembers(cardID)
+		for response in responses:
+			if response["id"] in config["trelloMapping"]: 
+				trelloManager.clearVote(cardID, response["id"], config["trelloMapping"][response["id"]][0], config["trelloMapping"][response["id"]][1])
 
 	return web.json_response(data)
 
@@ -66,7 +67,7 @@ if __name__ == "__main__":
 	server = loop.run_in_executor(executor, run_server)
 	
 	try:
-		trello.initWebhook()
+		trelloManager.initWebhook(config["trelloWatchListID"])
 		loop.run_forever()
 	except KeyboardInterrupt:
 		print("Exiting...")
