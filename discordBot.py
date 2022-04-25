@@ -2,12 +2,9 @@ import hikari
 import lightbulb
 import yaml
 
-with open('config.yaml', 'r+') as f:
-	config = yaml.safe_load(f)
-
 bot = lightbulb.BotApp(token = config['DISCORD_TOKEN'])
 
-def createMessage(data):
+def createMessage(data, config):
 	id_string = data["pull_request"]["user"]["id"]
 	user_id = str(config['gitDiscordMapping'].get(id_string))
 
@@ -26,7 +23,7 @@ def createMessage(data):
 
 	return message_string
 
-async def sendMessage(message_string):
+async def sendMessage(message_string, config):
 	async with hikari.RESTApp().acquire(config.get('DISCORD_TOKEN'), hikari.TokenType.BOT) as client:
 			await client.create_message(config.get('targetChannelID'), message_string)
 
