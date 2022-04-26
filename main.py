@@ -9,28 +9,37 @@ with open('config.yaml', 'r+') as f:
 	config = yaml.safe_load(f)
 
 routes = web.RouteTableDef()
+trelloManager = trello.trelloManager(config)
 
 @routes.post("/githubPullRequest")
 async def fetchDetails(request):
 	data = await request.json()
 	
-	try:
-		if data["pull_request"]["merged"] == True:
-			message_string = discordBot.createMessage(data)
-			await discordBot.sendMessage(message_string)
-			
-			responses = trello.getCardsFromList(config["trelloMoveFromListID"])
-			for response in responses:
-				desc = trello.getCardDesc(response["id"])
-				if trello.findCard(data["pull_request"]["html_url"], desc["_value"]) == True:
-					trello.moveCardToList(response["id"])
-	except KeyError:
-		pass
+	if "pull_request" not in data:
+		return web.json_response(data) 
 
-	return web.json_response(data)
+	if data["pull_request"]["merged"] == True:
+		pullReqUserID = data["pull_request"]["user"]["id"]
+		discordUserID = str(config['gitDiscordMapping'].get(pullReqUserID))
+		pullReqTitle = data["pull_request"]["title"]
+		pullReqURL = data["pull_request"]["html_url"]
+		discordToken = config.get('DISCORD_TOKEN')
+		targetChannelID = config.get('targetChannelID')
+
+		message_string = discordBot.createMessage(pullReqUserID, discordUserID, pullReqTitle, pullReqURL)
+		await discordBot.sendMessage(message_string, discordToken,  targetChannelID)
+		
+		cards = trelloManager.getCardsFromList(config["trelloMoveFromListID"])
+		for card in cards:
+			desc = trelloManager.getCardDesc(card["id"])
+			if trelloManager.urlExistsIn(desc["_value"], pullReqURL) == True:
+				trelloManager.moveCardToList(card["id"], config["trelloMoveToListID"])
+
+		return web.json_response(data)
 
 @routes.head("/trelloMovedToBoard")
 async def initWebhook(request):
+	print("Webhook initialized.")
 
 	return web.json_response()
 
@@ -38,16 +47,15 @@ async def initWebhook(request):
 async def movedToBoard(request):
 	data = await request.json()
 
-	try:
-		if data["action"]["type"] == "updateCard" and data["action"]["data"]["listAfter"]["id"] == config["trelloWatchListID"]:
-			print("Movement detected.")
+	if "listAfter" not in data["action"]["data"]:
+		return web.json_response(data)
 
-			cardID = data["action"]["data"]["card"]["id"]
-			responses = trello.getVotedMembers(cardID)
-			for response in responses:
-				trello.clearVotes(cardID, response["id"])
-	except KeyError:
-		pass
+	if isUpdateCard(data) and isMovedToReviewList(data):
+		cardID = data["action"]["data"]["card"]["id"]
+		votedMembers = trelloManager.getVotedMembers(cardID)
+		for member in votedMembers:
+			if member["id"] in config["trelloMapping"]: 
+				trelloManager.clearVote(cardID, member["id"])
 
 	return web.json_response(data)
 
@@ -59,6 +67,18 @@ def run_server():
 def run_bot():
 	discordBot.bot.run()
 
+def isUpdateCard(data):
+	if data["action"]["type"] == "updateCard":
+		return True
+
+	return False
+
+def isMovedToReviewList(data):
+	if data["action"]["data"]["listAfter"]["id"] == config["trelloReviewListID"]:
+		return True
+
+	return False
+
 if __name__ == "__main__":
 	executor = ProcessPoolExecutor(2)
 	loop = asyncio.new_event_loop()
@@ -66,7 +86,7 @@ if __name__ == "__main__":
 	server = loop.run_in_executor(executor, run_server)
 	
 	try:
-		trello.initWebhook()
+		trelloManager.initWebhook(config["trelloReviewListID"], config["hostURL"])
 		loop.run_forever()
 	except KeyboardInterrupt:
 		print("Exiting...")
