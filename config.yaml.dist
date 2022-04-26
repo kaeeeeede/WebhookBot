@@ -6,8 +6,9 @@ trelloMapping:
   <Trello ID here>: 
     - <Trello APIKey here>
     - <Trello Token here>
-trelloWatchListID: <Trello To-Watch List ID here>
+trelloReviewListID: <Trello To-Watch List ID here>
 trelloMoveFromListID: <Trello Move-From List ID here>
 trelloMoveToListID: <Trello Move-To List ID here>
 mainUserAPIKey: <Trello Main User's APIKey here>
 mainUserToken: <Trello Main User's Token here>
+hostURL: ~

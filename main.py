@@ -29,11 +29,11 @@ async def fetchDetails(request):
 		message_string = discordBot.createMessage(pullReqUserID, discordUserID, pullReqTitle, pullReqURL)
 		await discordBot.sendMessage(message_string, discordToken,  targetChannelID)
 		
-		responses = trelloManager.getCardsFromList(config["trelloMoveFromListID"])
-		for response in responses:
-			desc = trelloManager.getCardDesc(response["id"])
-			if trelloManager.urlExistsIn(desc["_value"], data["pull_request"]["html_url"]) == True:
-				trelloManager.moveCardToList(response["id"], config["trelloMoveToListID"])
+		cards = trelloManager.getCardsFromList(config["trelloMoveFromListID"])
+		for card in cards:
+			desc = trelloManager.getCardDesc(card["id"])
+			if trelloManager.urlExistsIn(desc["_value"], pullReqURL) == True:
+				trelloManager.moveCardToList(card["id"], config["trelloMoveToListID"])
 
 		return web.json_response(data)
 
@@ -50,7 +50,7 @@ async def movedToBoard(request):
 	if "listAfter" not in data["action"]["data"]:
 		return web.json_response(data)
 
-	if isUpdateCard(data) and isWatchListID(data):
+	if isUpdateCard(data) and isMovedToReviewList(data):
 		cardID = data["action"]["data"]["card"]["id"]
 		votedMembers = trelloManager.getVotedMembers(cardID)
 		for member in votedMembers:
@@ -73,8 +73,8 @@ def isUpdateCard(data):
 
 	return False
 
-def isWatchListID(data):
-	if data["action"]["data"]["listAfter"]["id"] == config["trelloWatchListID"]:
+def isMovedToReviewList(data):
+	if data["action"]["data"]["listAfter"]["id"] == config["trelloReviewListID"]:
 		return True
 
 	return False
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 	server = loop.run_in_executor(executor, run_server)
 	
 	try:
-		trelloManager.initWebhook(config["trelloWatchListID"])
+		trelloManager.initWebhook(config["trelloReviewListID"], config["hostURL"])
 		loop.run_forever()
 	except KeyboardInterrupt:
 		print("Exiting...")

@@ -62,18 +62,19 @@ class trelloManager:
 	def clearVote(self, cardID, memberID):
 		url = f"{self.baseURL}cards/{cardID}/membersVoted/{memberID}"
 
-		params = {'key': self.trelloMappings[memberID][0]
-				 ,'token': self.trelloMappings[memberID][1]}
+		params = self.baseParams
+		params['key'] = self.trelloMappings[memberID][0]
+		params['token'] = self.trelloMappings[memberID][1]
 		
 		response = requests.request("DELETE", url, params = params)
 
-	def initWebhook(self, trelloWatchListID):
+	def initWebhook(self, trelloReviewListID, hostURL):
 		url = f"{self.baseURL}webhooks"
 
 		headers = {"Accept": "application/json"}
 
 		params = self.baseParams
-		params['callbackURL'] = 'https://6675-218-111-14-86.ngrok.io/trelloMovedToBoard'
-		params['idModel'] = trelloWatchListID
+		params['callbackURL'] = f'{hostURL}/trelloMovedToBoard'
+		params['idModel'] = trelloReviewListID
 
 		response = requests.request("POST", url, headers = headers, params = params)

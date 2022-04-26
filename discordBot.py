@@ -9,16 +9,14 @@ bot = lightbulb.BotApp(token = config['DISCORD_TOKEN'])
 
 def createMessage(pullReqUserID, discordUserID, pullReqTitle, pullReqURL):
 	if not discordUserID == "None":
-		message_string = f"<@{discordUserID}>.\nPull request titled \"{pullReqTitle}\" has been merged.\nLink: {pullReqURL}"
+		return f"<@{discordUserID}>.\nPull request titled \"{pullReqTitle}\" has been merged.\nLink: {pullReqURL}"
 
-	else:
-		message_string = f"Pull request titled \"{pullReqTitle}\" has been merged.\nLink: {pullReqURL}"
-		print("PULL REQUEST MERGED WITHOUT MATCHING DISCORD ID")
-		print(f"User ID: {pullReqUserID}")
-		print(f"Pull request title: {pullReqTitle}")
-		print(f"Pull request link: {pullReqURL}")
-
-	return message_string
+	print("PULL REQUEST MERGED WITHOUT MATCHING DISCORD ID")
+	print(f"User ID: {pullReqUserID}")
+	print(f"Pull request title: {pullReqTitle}")
+	print(f"Pull request link: {pullReqURL}")
+	
+	return f"Pull request titled \"{pullReqTitle}\" has been merged.\nLink: {pullReqURL}"
 
 async def sendMessage(message_string, discordToken, targetChannelID):
 	async with hikari.RESTApp().acquire(discordToken, hikari.TokenType.BOT) as client:
