@@ -1,6 +1,7 @@
 import requests
 import json
 import re
+import copy
 
 class trelloManager:
 	def __init__(self, config):
@@ -36,7 +37,7 @@ class trelloManager:
 		return response.json()
 
 	def urlExistsIn(self, desc, pullRequestURL):
-		regex = rf"PULL REQUEST: {pullRequestURL}"
+		regex = rf"PULL REQUEST\s?:\s?{pullRequestURL}"
 		if re.fullmatch(regex, desc):
 			return True
 
@@ -62,7 +63,7 @@ class trelloManager:
 	def clearVote(self, cardID, memberID):
 		url = f"{self.baseURL}cards/{cardID}/membersVoted/{memberID}"
 
-		params = self.baseParams
+		params = copy.deepcopy(self.baseParams)
 		params['key'] = self.trelloMappings[memberID][0]
 		params['token'] = self.trelloMappings[memberID][1]
 		
