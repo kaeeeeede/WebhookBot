@@ -13,6 +13,7 @@ trelloManager = trello.trelloManager(config)
 
 @routes.post("/githubPullRequest")
 async def fetchDetails(request):
+	refresh_config()
 	data = await request.json()
 	
 	if "pull_request" not in data:
@@ -39,12 +40,14 @@ async def fetchDetails(request):
 
 @routes.head("/trelloMovedToBoard")
 async def initWebhook(request):
+	refresh_config()
 	print("Webhook initialized.")
 
 	return web.json_response()
 
 @routes.post("/trelloMovedToBoard")
 async def movedToBoard(request):
+	refresh_config()
 	data = await request.json()
 
 	if "listAfter" not in data["action"]["data"]:
@@ -58,6 +61,11 @@ async def movedToBoard(request):
 				trelloManager.clearVote(cardID, member["id"])
 
 	return web.json_response(data)
+
+def refresh_config():
+	with open('config.yaml', 'r+') as f:
+		global config 
+		config = yaml.safe_load(f)
 
 def run_server():
 	app = web.Application()
