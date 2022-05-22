@@ -11,8 +11,8 @@ class trelloManager:
 		self.baseParams = {'key': self.mainUserAPIKey
 						  ,'token': self.mainUserToken}
 		self.trelloMappings = {}
-		for mapping in config["trelloMapping"]:
-			self.trelloMappings[mapping] = (config["trelloMapping"][mapping][0], config["trelloMapping"][mapping][1])
+		for user in config["users"]:
+			self.trelloMappings[(config["users"][user]["trelloID"])] = (config["users"][user]["trelloKey"], config["users"][user]["trelloToken"])
 
 	def getCardsFromList(self, listID):
 		url = f"https://api.trello.com/1/lists/{listID}/cards"

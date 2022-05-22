@@ -21,14 +21,15 @@ async def fetchDetails(request):
 
 	if data["pull_request"]["merged"] == True:
 		pullReqUserID = data["pull_request"]["user"]["id"]
-		discordUserID = str(config['gitDiscordMapping'].get(pullReqUserID))
+		discordUserID = str(config["users"][find_user_by_github_id(pullReqUserID)]["discordID"])
+		#discordUserID = str(config['gitDiscordMapping'].get(pullReqUserID))
 		pullReqTitle = data["pull_request"]["title"]
 		pullReqURL = data["pull_request"]["html_url"]
 		discordToken = config.get('DISCORD_TOKEN')
 		targetChannelID = config.get('targetChannelID')
 
 		message_string = discordBot.createMessage(pullReqUserID, discordUserID, pullReqTitle, pullReqURL)
-		await discordBot.sendMessage(message_string, discordToken,  targetChannelID)
+		await discordBot.sendMessage(message_string, discordToken, targetChannelID)
 		
 		cards = trelloManager.getCardsFromList(config["trelloMoveFromListID"])
 		for card in cards:
@@ -57,8 +58,13 @@ async def movedToBoard(request):
 		cardID = data["action"]["data"]["card"]["id"]
 		votedMembers = trelloManager.getVotedMembers(cardID)
 		for member in votedMembers:
-			if member["id"] in config["trelloMapping"]: 
-				trelloManager.clearVote(cardID, member["id"])
+			for user in config["users"]:
+				try:
+					if member["id"] == config["users"][user]["trelloID"]: 
+						trelloManager.clearVote(cardID, member["id"])
+
+				except KeyError:
+					continue
 
 	return web.json_response(data)
 
@@ -66,6 +72,15 @@ def refresh_config():
 	with open('config.yaml', 'r+') as f:
 		global config 
 		config = yaml.safe_load(f)
+
+def find_user_by_github_id(targetID):
+	for user in config["users"]:
+		try:
+			if config["users"][user]["githubID"] == targetID:
+				return user
+
+		except KeyError:
+			continue
 
 def run_server():
 	app = web.Application()

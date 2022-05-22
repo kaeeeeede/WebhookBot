@@ -1,11 +1,13 @@
 DISCORD_TOKEN: ~
-gitDiscordMapping:
-  <GitHub ID here>: <Discord ID here>
 targetChannelID: <Channel/Thread ID here>
-trelloMapping:
-  <Trello ID here>: 
-    - <Trello APIKey here>
-    - <Trello Token here>
+users:
+  <User ID here>:
+    name: <User Name here>
+    githubID: <User GitHub ID here>
+    discordID: <User Discord ID here>
+    trelloID: <User Trello ID here>
+    trelloKey: <User Trello APIKey here>
+    trelloToken: <User Trello Token here>
 trelloReviewListID: <Trello To-Watch List ID here>
 trelloMoveFromListID: <Trello Move-From List ID here>
 trelloMoveToListID: <Trello Move-To List ID here>
