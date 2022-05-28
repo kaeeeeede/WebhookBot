@@ -12,7 +12,7 @@ class trelloManager:
 						  ,'token': self.mainUserToken}
 		self.trelloMappings = {}
 		for user in config["users"]:
-			self.trelloMappings[(config["users"][user]["trelloID"])] = (config["users"][user]["trelloKey"], config["users"][user]["trelloToken"])
+			self.trelloMappings[(config["users"][user].get("trelloID"))] = (config["users"][user].get("trelloKey"), config["users"][user].get("trelloToken"))
 
 	def getCardsFromList(self, listID):
 		url = f"https://api.trello.com/1/lists/{listID}/cards"
