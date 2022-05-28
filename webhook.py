@@ -88,7 +88,3 @@ def init_webapp():
 	app.add_routes(routes)
 
 	return app
-
-def get_config(latest_config):
-	global config
-	config = latest_config
