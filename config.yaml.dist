@@ -4,7 +4,7 @@ users:
   <User ID here>:
     name: <User Name here>
     githubID: <User GitHub ID here>
-    discordID: <User Discord ID here>
+    discordID: (string)<User Discord ID here>
     trelloID: <User Trello ID here>
     trelloKey: <User Trello APIKey here>
     trelloToken: <User Trello Token here>
