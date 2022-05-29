@@ -2,6 +2,7 @@ from hikari.messages import MessageFlag
 from configurations import configurations
 from yaml.representer import Representer
 from collections import defaultdict
+from copy import copy
 import hikari
 import lightbulb
 import yaml
@@ -31,8 +32,8 @@ async def sendMessage(message_string, discordToken, targetChannelID):
 @bot.command
 @lightbulb.option("userid", "Enter the user's ID", type = int)
 @lightbulb.option("name", "Enter the user's name")
-@lightbulb.option("githubid", "Enter the user's GitHub ID", default = "None")
-@lightbulb.option("discordid", "Enter the user's Discord ID", default = "None")
+@lightbulb.option("discordid", "Enter the user's Discord ID")
+@lightbulb.option("githubid", "Enter the user's GitHub ID", type = int, default = "None")
 @lightbulb.option("trelloid", "Enter the user's Trello ID", default = "None")
 @lightbulb.option("trellokey", "Enter the user's Trello API Key", default = "None")
 @lightbulb.option("trellotoken", "Enter the user's Trello Token", default = "None")
@@ -40,25 +41,16 @@ async def sendMessage(message_string, discordToken, targetChannelID):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def insertUser(ctx):
 	configurations.reload_config()
-	temp_dict = {}
 
-	temp_dict["name"] = ctx.options.name
+	if get_user_by_discord_id(ctx.options.discordid):
+		await ctx.respond("User already exists.", flags = MessageFlag.EPHEMERAL)
 
-	if not ctx.options.githubid == "None":
-		temp_dict["githubID"] = ctx.options.githubid
+		return
 
-	if not ctx.options.discordid == "None":
-		temp_dict["discordID"] = ctx.options.discordid
+	temp_dict = {"name": ctx.options.name
+				, "discordID": ctx.options.discordid}
 
-	if not ctx.options.trelloid == "None":
-		temp_dict["trelloID"] = ctx.options.trelloid
-
-	if not ctx.options.trellokey == "None":
-		temp_dict["trelloKey"] = ctx.options.trellokey
-
-	if not ctx.options.trellotoken == "None":
-		temp_dict["trelloToken"] = ctx.options.trellotoken
-
+	temp_dict.update(create_dict(ctx.options.githubid, ctx.options.discordid, ctx.options.trelloid, ctx.options.trellokey, ctx.options.trellotoken))
 	config["users"][ctx.options.userid] = temp_dict
 
 	with open('config.yaml', 'w') as f:
@@ -67,9 +59,9 @@ async def insertUser(ctx):
 	await ctx.respond("User added.", flags = MessageFlag.EPHEMERAL)
 
 @bot.command
-@lightbulb.option("userid", "Enter the user's ID", type = int)
-@lightbulb.option("githubid", "Enter the user's GitHub ID", default = "None")
-@lightbulb.option("discordid", "Enter the user's Discord ID", default = "None")
+@lightbulb.option("currentdiscordid", "Enter the user's current Discord ID")
+@lightbulb.option("githubid", "Enter the user's GitHub ID", type = int, default = "None")
+@lightbulb.option("newdiscordid", "Enter the user's new Discord ID", default = "None")
 @lightbulb.option("trelloid", "Enter the user's Trello ID", default = "None")
 @lightbulb.option("trellokey", "Enter the user's Trello API Key", default = "None")
 @lightbulb.option("trellotoken", "Enter the user's Trello Token", default = "None")
@@ -77,53 +69,52 @@ async def insertUser(ctx):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def updateUser(ctx):
 	configurations.reload_config()
-	if not user_exists_in_config(ctx.options.userid):
-		await ctx.respond("User not found.")
+
+	if not get_user_by_discord_id(ctx.options.currentdiscordid ):
+		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
 
 		return
 
-	if not ctx.options.githubid == "None":
-		config["users"][ctx.options.userid]["githubID"] = ctx.options.githubid
+	temp_dict = create_dict(ctx.options.githubid, ctx.options.newdiscordid, ctx.options.trelloid, ctx.options.trellokey, ctx.options.trellotoken)
+	user = config["users"][get_user_by_discord_id(ctx.options.currentdiscordid)]
+	user.update(temp_dict)
+	
+	if not ctx.options.newdiscordid == "None":
+		message = get_user_details(get_user_by_discord_id(ctx.options.newdiscordid))
 
-	if not ctx.options.discordid == "None":
-		config["users"][ctx.options.userid]["discordID"] = ctx.options.discordid
-
-	if not ctx.options.trelloid == "None":
-		config["users"][ctx.options.userid]["trelloID"] = ctx.options.trelloid
-
-	if not ctx.options.trellokey == "None":
-		config["users"][ctx.options.userid]["trelloKey"] = ctx.options.trellokey
-
-	if not ctx.options.trellotoken == "None":
-		config["users"][ctx.options.userid]["trelloToken"] = ctx.options.trellotoken
+	else:
+		message = get_user_details(get_user_by_discord_id(ctx.options.currentdiscordid))
 
 	with open('config.yaml', 'w') as f:
 		f.write(yaml.dump(config, sort_keys = False, default_style = ""))
 
 	await ctx.respond("User updated.", flags = MessageFlag.EPHEMERAL)
+	await ctx.respond(message, flags = MessageFlag.EPHEMERAL)
 
 @bot.command
-@lightbulb.option("userid", "Enter the user's ID", type = int)
-@lightbulb.command("getuser", "Get the details of a user", ephemeral = False, auto_defer = False)
+@lightbulb.option("discordid", "Enter the user's Discord ID")
+@lightbulb.command("deleteuser", "Delete a user", ephemeral = False, auto_defer = False)
 @lightbulb.implements(lightbulb.SlashCommand)
-async def getUser(ctx):
+async def deleteUser(ctx):
 	configurations.reload_config()
-	
-	if not user_exists_in_config(ctx.options.userid):
+
+	if not get_user_by_discord_id(ctx.options.discordid):
 		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
 
 		return
 
-	message = get_user_details(ctx.options.userid)
+	user = get_user_by_discord_id(ctx.options.discordid)
+	config["users"].pop(user)
 
-	await ctx.respond(message, flags = MessageFlag.EPHEMERAL)
+	with open('config.yaml', 'w') as f:
+		f.write(yaml.dump(config, sort_keys = False, default_style = ""))
 
-def user_exists_in_config(targetID):
+	await ctx.respond("User deleted.", flags = MessageFlag.EPHEMERAL)
+
+def get_user_by_discord_id(targetID):
 	for user in config["users"]:
-		if user == targetID:
-			return True
-
-	return False
+		if config["users"][user].get("discordID") == targetID:
+			return user
 
 def get_user_details(user):
 	message = f"Details of user {user}\n"
@@ -133,3 +124,18 @@ def get_user_details(user):
 		message = message + f"{key}: {value}\n"
 
 	return message
+
+def create_dict(githubID, discordID, trelloID, trelloKey, trelloToken):
+	temp_dict = {"githubID": githubID
+				, "discordID": discordID
+				, "trelloID": trelloID
+				, "trelloKey": trelloKey
+				, "trelloToken": trelloToken}
+
+	for key in temp_dict.copy():
+		if not temp_dict[key] == "None":
+			continue
+
+		temp_dict.pop(key)
+
+	return temp_dict

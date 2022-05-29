@@ -23,7 +23,7 @@ async def fetchDetails(request):
 		targetChannelID = config.get('targetChannelID')
 
 		if not config["users"].get(find_user_by_github_id(pullReqUserID, config)) == None:
-			discordUserID = str(config["users"][find_user_by_github_id(pullReqUserID, config)]["discordID"])
+			discordUserID = config["users"][find_user_by_github_id(pullReqUserID, config)]["discordID"]
 
 		else:
 			discordUserID = "None"
@@ -57,14 +57,16 @@ async def movedToBoard(request):
 		cardID = data["action"]["data"]["card"]["id"]
 		votedMembers = trelloManager.getVotedMembers(cardID)
 		for member in votedMembers:
-			clear_votes(cardID, member, config)
+			if find_member_by_trello_id(member, config):
+				user = config["users"][find_member_by_trello_id(member, config)]
+				trelloManager.clearVote(cardID, member["id"], user["trelloKey"], user["trelloToken"])
 
 	return web.json_response(data)
 
-def clear_votes(cardID, member, config):
+def find_member_by_trello_id(member, config):
 	for user in config["users"]:
-		if member["id"] == config["users"][user].get("trelloID"): 
-			trelloManager.clearVote(cardID, member["id"])
+		if member["id"] == config["users"][user].get("trelloID"):
+			return user
 
 def find_user_by_github_id(targetID, config):
 	for user in config["users"]:
