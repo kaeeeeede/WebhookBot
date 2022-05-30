@@ -1,16 +1,9 @@
-DISCORD_TOKEN: ~
+DISCORD_TOKEN: <Discord Token here>
 targetChannelID: <Channel/Thread ID here>
-users:
-  <User ID here>:
-    name: <User Name here>
-    githubID: <User GitHub ID here>
-    discordID: (string)<User Discord ID here>
-    trelloID: <User Trello ID here>
-    trelloKey: <User Trello APIKey here>
-    trelloToken: <User Trello Token here>
+users: {}
 trelloReviewListID: <Trello To-Watch List ID here>
 trelloMoveFromListID: <Trello Move-From List ID here>
 trelloMoveToListID: <Trello Move-To List ID here>
 mainUserAPIKey: <Trello Main User's APIKey here>
 mainUserToken: <Trello Main User's Token here>
-hostURL: ~
+hostURL: <Host URL here>

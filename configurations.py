@@ -14,7 +14,7 @@ class configurations:
 
 	@classmethod
 	def default_value(cls):
-		return "None"
+		return {}
 
 	@classmethod
 	def get_config(cls):

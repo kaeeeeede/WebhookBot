@@ -41,9 +41,9 @@ async def sendMessage(message_string, discordToken, targetChannelID):
 async def insertUser(ctx):
 	configurations.reload_config()
 
-	if not config.get("users") == None:
+	if config.get("users"):
 		if not get_user_by_discord_id(ctx.options.discordid):
-			new_user_id = len(config["users"]) + 1
+			new_user_id = list(config["users"])[-1] + 1
 
 		else:
 			await ctx.respond("User already exists.", flags = MessageFlag.EPHEMERAL)
@@ -51,7 +51,6 @@ async def insertUser(ctx):
 			return
 
 	else:
-		config["users"] = {}
 		new_user_id = 1
 
 	temp_dict = {"name": ctx.options.name
@@ -91,11 +90,11 @@ async def updateUser(ctx):
 	user = config["users"][get_user_by_discord_id(ctx.options.currentdiscordid)]
 	user.update(temp_dict)
 	
-	if not ctx.options.newdiscordid == "None":
-		message = get_user_details(get_user_by_discord_id(ctx.options.newdiscordid))
+	if ctx.options.newdiscordid == "None":
+		message = get_user_details(get_user_by_discord_id(ctx.options.currentdiscordid))
 
 	else:
-		message = get_user_details(get_user_by_discord_id(ctx.options.currentdiscordid))
+		message = get_user_details(get_user_by_discord_id(ctx.options.newdiscordid))
 
 	with open('config.yaml', 'w') as f:
 		f.write(yaml.dump(config, sort_keys = False, default_style = ""))
@@ -170,10 +169,6 @@ def create_dict(githubID, discordID, trelloID, trelloKey, trelloToken):
 				, "trelloKey": trelloKey
 				, "trelloToken": trelloToken}
 
-	for key in temp_dict.copy():
-		if not temp_dict[key] == "None":
-			continue
-
-		temp_dict.pop(key)
+	temp_dict = {x: y for (x, y) in temp_dict.items() if y != "None"}
 
 	return temp_dict
