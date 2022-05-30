@@ -41,17 +41,23 @@ async def sendMessage(message_string, discordToken, targetChannelID):
 async def insertUser(ctx):
 	configurations.reload_config()
 
-	if get_user_by_discord_id(ctx.options.discordid):
-		await ctx.respond("User already exists.", flags = MessageFlag.EPHEMERAL)
+	if not config.get("users") == None:
+		if not get_user_by_discord_id(ctx.options.discordid):
+			new_user_id = len(config["users"]) + 1
 
-		return
+		else:
+			await ctx.respond("User already exists.", flags = MessageFlag.EPHEMERAL)
+
+			return
+
+	else:
+		config["users"] = {}
+		new_user_id = 1
 
 	temp_dict = {"name": ctx.options.name
 				, "discordID": ctx.options.discordid}
 
 	temp_dict.update(create_dict(ctx.options.githubid, ctx.options.discordid, ctx.options.trelloid, ctx.options.trellokey, ctx.options.trellotoken))
-	
-	new_user_id = len(config["users"]) + 1
 	config["users"][new_user_id] = temp_dict
 
 	with open('config.yaml', 'w') as f:
@@ -71,7 +77,12 @@ async def insertUser(ctx):
 async def updateUser(ctx):
 	configurations.reload_config()
 
-	if not get_user_by_discord_id(ctx.options.currentdiscordid ):
+	if not config.get("users"):
+		await ctx.respond("There are no users in the file. Please use /insertuser first.", flags = MessageFlag.EPHEMERAL)
+
+		return
+
+	if not get_user_by_discord_id(ctx.options.currentdiscordid):
 		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
 
 		return
@@ -99,6 +110,11 @@ async def updateUser(ctx):
 async def deleteUser(ctx):
 	configurations.reload_config()
 
+	if not config.get("users"):
+		await ctx.respond("There are no users in the file. Please use /insertuser first.", flags = MessageFlag.EPHEMERAL)
+
+		return
+
 	if not get_user_by_discord_id(ctx.options.discordid):
 		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
 
@@ -118,6 +134,11 @@ async def deleteUser(ctx):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def showUser(ctx):
 	configurations.reload_config()
+
+	if not config.get("users"):
+		await ctx.respond("There are no users in the file. Please use /insertuser first.", flags = MessageFlag.EPHEMERAL)
+
+		return
 
 	if not get_user_by_discord_id(ctx.options.discordid):
 		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
