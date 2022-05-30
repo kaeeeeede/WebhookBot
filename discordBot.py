@@ -30,7 +30,6 @@ async def sendMessage(message_string, discordToken, targetChannelID):
 	return
 
 @bot.command
-@lightbulb.option("userid", "Enter the user's ID", type = int)
 @lightbulb.option("name", "Enter the user's name")
 @lightbulb.option("discordid", "Enter the user's Discord ID")
 @lightbulb.option("githubid", "Enter the user's GitHub ID", type = int, default = "None")
@@ -51,7 +50,9 @@ async def insertUser(ctx):
 				, "discordID": ctx.options.discordid}
 
 	temp_dict.update(create_dict(ctx.options.githubid, ctx.options.discordid, ctx.options.trelloid, ctx.options.trellokey, ctx.options.trellotoken))
-	config["users"][ctx.options.userid] = temp_dict
+	
+	new_user_id = len(config["users"]) + 1
+	config["users"][new_user_id] = temp_dict
 
 	with open('config.yaml', 'w') as f:
 		f.write(yaml.dump(config, sort_keys = False, default_style = ""))
@@ -110,6 +111,22 @@ async def deleteUser(ctx):
 		f.write(yaml.dump(config, sort_keys = False, default_style = ""))
 
 	await ctx.respond("User deleted.", flags = MessageFlag.EPHEMERAL)
+
+@bot.command
+@lightbulb.option("discordid", "Enter the user's Discord ID")
+@lightbulb.command("showuser", "Show the details of a user", ephemeral = False, auto_defer = False)
+@lightbulb.implements(lightbulb.SlashCommand)
+async def showUser(ctx):
+	configurations.reload_config()
+
+	if not get_user_by_discord_id(ctx.options.discordid):
+		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
+
+		return
+
+	message = get_user_details(get_user_by_discord_id(ctx.options.discordid))
+
+	await ctx.respond(message, flags = MessageFlag.EPHEMERAL)
 
 def get_user_by_discord_id(targetID):
 	for user in config["users"]:
