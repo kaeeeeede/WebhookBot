@@ -10,9 +10,6 @@ class trelloManager:
 		self.baseURL = "https://api.trello.com/1/"
 		self.baseParams = {'key': self.mainUserAPIKey
 						  ,'token': self.mainUserToken}
-		self.trelloMappings = {}
-		for mapping in config["trelloMapping"]:
-			self.trelloMappings[mapping] = (config["trelloMapping"][mapping][0], config["trelloMapping"][mapping][1])
 
 	def getCardsFromList(self, listID):
 		url = f"https://api.trello.com/1/lists/{listID}/cards"
@@ -60,12 +57,12 @@ class trelloManager:
 
 		return response.json()
 
-	def clearVote(self, cardID, memberID):
+	def clearVote(self, cardID, memberID, memberKey, memberToken):
 		url = f"{self.baseURL}cards/{cardID}/membersVoted/{memberID}"
 
 		params = copy.deepcopy(self.baseParams)
-		params['key'] = self.trelloMappings[memberID][0]
-		params['token'] = self.trelloMappings[memberID][1]
+		params['key'] = memberKey
+		params['token'] = memberToken
 		
 		response = requests.request("DELETE", url, params = params)
 
