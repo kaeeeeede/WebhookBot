@@ -42,13 +42,13 @@ async def insertUser(ctx):
 	configurations.reload_config()
 
 	if config.get("users"):
-		if not get_user_by_discord_id(ctx.options.discordid):
-			new_user_id = list(config["users"])[-1] + 1
-
-		else:
+		if get_user_by_discord_id(ctx.options.discordid):
 			await ctx.respond("User already exists.", flags = MessageFlag.EPHEMERAL)
 
 			return
+
+		else:
+			new_user_id = list(config["users"])[-1] + 1
 
 	else:
 		new_user_id = 1
@@ -75,11 +75,6 @@ async def insertUser(ctx):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def updateUser(ctx):
 	configurations.reload_config()
-
-	if not config.get("users"):
-		await ctx.respond("There are no users in the file. Please use /insertuser first.", flags = MessageFlag.EPHEMERAL)
-
-		return
 
 	if not get_user_by_discord_id(ctx.options.currentdiscordid):
 		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
@@ -109,11 +104,6 @@ async def updateUser(ctx):
 async def deleteUser(ctx):
 	configurations.reload_config()
 
-	if not config.get("users"):
-		await ctx.respond("There are no users in the file. Please use /insertuser first.", flags = MessageFlag.EPHEMERAL)
-
-		return
-
 	if not get_user_by_discord_id(ctx.options.discordid):
 		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
 
@@ -133,11 +123,6 @@ async def deleteUser(ctx):
 @lightbulb.implements(lightbulb.SlashCommand)
 async def showUser(ctx):
 	configurations.reload_config()
-
-	if not config.get("users"):
-		await ctx.respond("There are no users in the file. Please use /insertuser first.", flags = MessageFlag.EPHEMERAL)
-
-		return
 
 	if not get_user_by_discord_id(ctx.options.discordid):
 		await ctx.respond("User not found.", flags = MessageFlag.EPHEMERAL)
