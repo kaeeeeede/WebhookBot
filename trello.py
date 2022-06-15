@@ -35,7 +35,7 @@ class trelloManager:
 
 	def urlExistsIn(self, desc, pullRequestURL):
 		regex = rf"PULL REQUEST\s?:\s?{pullRequestURL}"
-		if re.search(regex, desc):
+		if re.search(regex, desc, re.IGNORECASE):
 			return True
 
 	def moveCardToList(self, cardID, listID):
