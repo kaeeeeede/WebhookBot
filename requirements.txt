@@ -1,0 +1,9 @@
+aiohttp==3.8.1
+Flask==2.0.3
+flask_sqlalchemy==2.5.1
+hikari==2.0.0.dev109
+hikari_lightbulb==2.2.4
+lightbulb==0.1d
+PyYAML==6.0
+requests==2.27.1
+SQLAlchemy==1.4.40

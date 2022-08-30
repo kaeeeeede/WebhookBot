@@ -1,0 +1,8 @@
+username = ~
+password = ~
+hostname = f"{username}.mysql.pythonanywhere-services.com"
+databasename = f"{username}$requests"
+
+SQLALCHEMY_DATABASE_URI = (f"mysql://{username}:{password}@{hostname}/{databasename}")
+SQLALCHEMY_ENGINE_OPTIONS = {"pool_recycle": 299}
+SQLALCHEMY_TRACK_MODIFICATIONS = False
