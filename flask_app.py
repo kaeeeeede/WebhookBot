@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.config.from_object("db_config")
 db = SQLAlchemy(app)
-ENDPOINT_MAX_LENGTH = 25
+ENDPOINT_MAX_LENGTH = 200
 
 @app.route("/")
 def main():
