@@ -112,7 +112,7 @@ def isUpdateCard(data):
 
 async def main():
     while True:
-        if not job := find_pending_job():
+        if not (job := find_pending_job()):
             sleep(1)
             continue
 
