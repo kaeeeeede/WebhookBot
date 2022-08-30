@@ -7,3 +7,6 @@ trelloMoveToListID: <Trello Move-To List ID here>
 mainUserAPIKey: <Trello Main User's APIKey here>
 mainUserToken: <Trello Main User's Token here>
 hostURL: <Host URL here>
+pythonAnywhereUsername: ~
+pythonAnywherePassword: ~
+pythonAnywhereDatabaseName: ~
