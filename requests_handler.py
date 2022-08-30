@@ -18,21 +18,19 @@ Session = sessionmaker(bind = engine, expire_on_commit = False)
 def find_pending_job():
     with Session.begin() as session:
         queue = session.query(Job)
-        if job := queue.first():
-            return job
+        return queue.first()
 
 async def process_job(job):
-    endpoint_dist_table = {
+    endpoint_dispatch_table = {
         "/githubPullRequest": process_github_job
         , "/trelloMovedToBoard": process_trello_job
     }
 
-    if not job.endpoint in endpoint_dist_table:
+    if not job.endpoint in endpoint_dispatch_table:
         print(f"Endpoint {job.endpoint} not defined.")
-
         return
 
-    if inspect.iscoroutinefunction(target_function := endpoint_dist_table[job.endpoint]):
+    if inspect.iscoroutinefunction(target_function := endpoint_dispatch_table[job.endpoint]):
         await target_function(job.payload)
 
     else:
@@ -114,11 +112,8 @@ def isUpdateCard(data):
 
 async def main():
     while True:
-        job = find_pending_job()
-
-        if not job:
+        if not job := find_pending_job():
             sleep(1)
-
             continue
 
         await process_job(job)
